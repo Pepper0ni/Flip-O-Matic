@@ -16,9 +16,7 @@ function onLoad(state)
  printFlips=save.printFlips
  flipCleanup=save.flipCleanup or"off"
  if save.coins then
-  for i,coin in pairs(save.coins) do
-   coinsActive[i]=getObjectFromGUID(coin)
-  end
+  for c=1,#save.coins do coinsActive[c]=getObjectFromGUID(save.coins[c])end
  end
  setUpContextMenu()
 end
@@ -33,9 +31,7 @@ function numberButtonPressed(num,color)
  if self.getData().ContainedObjects then
   if watchingCoins==false then
    --Delete old coins if they exist
-   if #coinsActive>0 then
-    deleteCoins()
-   end
+   if #coinsActive>0 then deleteCoins()end
    coinsFlipped=0
    watchingCoins=true
    local bagPos,bagRot=self.getPosition(),self.getRotation()
@@ -77,28 +73,23 @@ function watchCoin()
    end
   end
   coroutine.yield(0)
- until (restingCount==#coinsActive and coinsFlipped==#coinsActive) or os.time()>startTime+5
+ until (restingCount==#coinsActive and coinsFlipped==#coinsActive)or os.time()>startTime+5
  watchingCoins=false
  --Prints the results if printFlips is enabled
- if printFlips==true then
-  formatRollResults(activeColor)
- end
+ if printFlips==true then formatRollResults(activeColor)end
  --Automatically deletes the coin if flipCleanup is 0 or higher
  if flipCleanup==0 then
   deleteCoins()
  elseif tonumber(flipCleanup)then
-  Timer.destroy("flipCleanupTimer")
-  Timer.create({identifier="flipCleanupTimer",function_name="deleteCoins",function_owner=self,delay=flipCleanup})
+  Wait.time(deleteCoins,flipCleanup)
  end
  return 1
 end
 
 --Used to delete coins from previous flips
 function deleteCoins()
- for _,coin in ipairs(coinsActive) do
-  if coin!=nil then
-   destroyObject(coin)
-  end
+ for c=1,#coinsActive do
+  if coinsActive[c]!=nil then destroyObject(coinsActive[c])end
  end
  coinsActive={}
  watchingCoins=false
@@ -118,32 +109,37 @@ end
 --Get a radial position to place item
 function getRadialPosition(i,i_max,pos,rot)
  local spokes=360/i_max
- local posX=pos.x+math.sin( math.rad((spokes*i)+rot.y) ) * radius
+ local posX=pos.x+math.sin(math.rad((spokes*i)+rot.y))*radius
  local posY=pos.y+0.25
- local posZ=pos.z+math.cos( math.rad((spokes*i)+rot.y) ) * radius
+ local posZ=pos.z+math.cos(math.rad((spokes*i)+rot.y))*radius
  return {x=posX,y=posY,z=posZ}
 end
 
 function createButtons()
  --Spawns number buttons and assigns a function trigger for each
- for i,pos in ipairs(buttonPositionList) do
-  self.createButton({
-   click_function="but"..i,function_owner=self,
-   position=pos,height=170,width=170
-  })
-  local func=function(_,color) numberButtonPressed(i,color) end
-  self.setVar("but"..i,func)
+ local params={
+  function_owner=self,
+  height=190,
+  width=190,
+  color={0,0,0,0}
+ }
+ for c=1,#butPosList do
+  params.click_function="but"..c
+  params.position=butPosList[c]
+  params.tooltip="Flip "..tostring(c).." Coins"
+  self.createButton(params)
+  local func=function(_,color)numberButtonPressed(c,color)end
+  _G["but"..c]=func
  end
-
  --Spawns deleteCoins button
- self.createButton({
-  click_function="deleteCoins",function_owner=self,
-  position={0,0,0.73},height=170,width=170
- })
+ params.position={0,0,0.73}
+ params.click_function="deleteCoins"
+ params.tooltip="Delete Coins"
+ self.createButton(params)
 end
 
 --Data table of positions for number buttons 1-9,in order
-buttonPositionList={
+butPosList={
  {-0.435,0,0.59},{-0.693,0,0.22},{-0.693,0,-0.22},{-0.435,0,-0.59},
  {0,0,-0.73},{0.435,0,-0.59},{0.693,0,-0.22},{0.693,0,0.22},{0.435,0,0.59}
 }
@@ -174,8 +170,6 @@ end
 
 function saveData()
  local save={printFlips=printFlips,flipCleanup=flipCleanup,coins={}}
- for i,coin in pairs(coinsActive) do
-  save.coins[i]=coinsActive[i].guid
- end
+ for i,coin in pairs(coinsActive) do save.coins[i]=coinsActive[i].guid end
  self.script_state=json.serialize(save)
 end
