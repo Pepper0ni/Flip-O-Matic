@@ -146,18 +146,18 @@ butPosList={
 
 function setUpContextMenu()
  if printFlips then
-  self.addContextMenuItem("Quiet flips", function() changeSetting("printFlips",false) end)
+  self.addContextMenuItem("Quiet flips",||changeSetting("printFlips",false))
  else
-  self.addContextMenuItem("Print flips", function() changeSetting("printFlips",true) end)
+  self.addContextMenuItem("Print flips",||changeSetting("printFlips",true))
  end
  if flipCleanup!="off"then
-  self.addContextMenuItem("Disable Cleanup", function() changeSetting("flipCleanup","off") end)
+  self.addContextMenuItem("Disable Cleanup",||changeSetting("flipCleanup","off"))
  end
  if flipCleanup!=0 then
-  self.addContextMenuItem("Instant Cleanup", function() changeSetting("flipCleanup",0) end)
+  self.addContextMenuItem("Instant Cleanup",||changeSetting("flipCleanup",0))
  end
  if flipCleanup!=3 then
-  self.addContextMenuItem("Delayed Cleanup", function() changeSetting("flipCleanup",3) end)
+  self.addContextMenuItem("Delayed Cleanup",||changeSetting("flipCleanup",3))
  end
 end
 
@@ -166,6 +166,11 @@ function changeSetting(setting,value)
  self.clearContextMenu()
  setUpContextMenu()
  saveData()
+end
+
+function onNumberTyped(color,num)
+ numberButtonPressed(num,color)
+ return true
 end
 
 function saveData()
