@@ -1,7 +1,8 @@
 --Flip-0-Matic, originally Roll-O-Matic by MrStump, edited by Pepper0ni
 
 --Distance the coins are placed from the tool
-radius=3
+local selfScale=self.getScale()
+radius=1.5*math.max(selfScale.x,selfScale.z)
 --How high (relative to the tool) the coins are flipped
 height=20
 
@@ -119,22 +120,23 @@ function createButtons()
  --Spawns number buttons and assigns a function trigger for each
  local params={
   function_owner=self,
-  height=190,
-  width=190,
-  color={0,0,0,0}
+  height=380,
+  width=380,
+  scale={0.5,1,0.5}
  }
  for c=1,#butPosList do
-  params.click_function="but"..c
-  params.position=butPosList[c]
-  params.tooltip="Flip "..tostring(c).." Coins"
-  self.createButton(params)
-  local func=function(_,color)numberButtonPressed(c,color)end
+  butWrapper(params,butPosList[c],"","Flip "..tostring(c).." Coins","but"..c)
+  local func=|_,color|numberButtonPressed(c,color)
   _G["but"..c]=func
  end
- --Spawns deleteCoins button
- params.position={0,0,0.73}
- params.click_function="deleteCoins"
- params.tooltip="Delete Coins"
+ butWrapper(params,{0,0,0.73},"","Delete Coins","deleteCoins")
+end
+
+function butWrapper(params,pos,label,tool,func,color)
+ params.position=pos
+ params.label=label
+ params.tooltip=tool
+ params.click_function=func
  self.createButton(params)
 end
 
