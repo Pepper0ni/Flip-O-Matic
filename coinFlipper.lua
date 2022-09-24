@@ -589,7 +589,7 @@ printFlips=true
 
 function onLoad(state)
  local save={}
- if state and state!="" then
+ if state and state!=""then
   save=json.parse(state)
  end
  printFlips=save.printFlips
@@ -598,9 +598,7 @@ function onLoad(state)
   for c=1,#save.coins do coinsActive[c]=getObjectFromGUID(save.coins[c])end
  end
  curCoin=save.curCoin or 1
- curHue=save.curHue or 0
- curLit=save.curLit or 11
- desat=save.desat or false
+ curColor=save.curColor or{137/255,64/255,3/255}
  createButtons()
  setUpContextMenu()
 end
@@ -612,7 +610,7 @@ end
 
 function onObjectLeaveContainer(cont,leaving)
  if cont~=self then return end
- leaving.setColorTint(getColor(0,0,0))
+ leaving.setColorTint(getColor())
  leaving.setCustomObject({mesh=getMesh(),diffuse=getSteamUrl(diffs[curCoin]),normal=getSteamUrl(bumps[curCoin])})
 end
 
@@ -707,7 +705,7 @@ function createButtons()
   function_owner=self,
   height=380,
   width=380,
-  font_size=75,
+  font_size=80,
   alignment=3,
   value=tostring(curCoin),
   scale={0.5,1,0.5},
@@ -719,25 +717,13 @@ function createButtons()
   local func=|_,color|numberButtonPressed(c,color)
   _G["but"..c]=func
  end
+ params.height=200
  butWrapper(params,{0,0,0.73},"","Delete Coins","deleteCoins",{0,0,0,0})
  if ifTint()then
-  params.width=200
-  params.height=200
-  butWrapper(params,{0.4,0.055,0},'','Toggle Monochrome Mode',"toggleSat",getOtherSat())
-  params.height=120
-  params.width=140
-  params.rotation={180,0,0}
-  butWrapper(params,{0,0.055,0.4},'','',"null",getColor(0,0,0))
-  params.rotation={0,0,0}
-  if not desat then
-   butWrapper(params,{0.12,0.055,0.4},'→','Change Coin Hue',"incHue",getColor(20,0,0))
-   butWrapper(params,{-0.12,0.055,0.4},'←','Change Coin Hue',"decHue",getColor(-20,0,0))
-  end
-  butWrapper(params,{0,0.055,0.34},'↑','Change Coin Lightness',"incLit",getColor(0,0,1))
-  butWrapper(params,{0,0.055,0.46},'↓','Change Coin Lightness',"decLit",getColor(0,0,-1))
+  params.width=500
+  butWrapper(params,{0,0.055,0.4},'Choose Color','Choose a color for the coins',"colorPrompt",curColor)
  end
  params.width=200
- params.height=200
  params.font_size=150
  butWrapper(params,{-0.19,0.055,-0.375},'-','Previous Coin',"prevCoin",{1,0,0})
  butWrapper(params,{0.19,0.055,-0.375},'+','Next Coin',"nextCoin",{0,0.5,0})
@@ -768,28 +754,12 @@ function prevCoin(obj,color,alt_click)
  changeCoin()
 end
 
-function incHue(obj,color,alt_click)
- curHue=loopAdd(curHue,10,1,360)
- changeCoin()
+function colorPrompt(obj,color,alt_click)
+ Player[color].showColorDialog(curColor,changeColor)
 end
 
-function decHue(obj,color,alt_click)
- curHue=loopAdd(curHue,-10,1,360)
- changeCoin()
-end
-
-function incLit(obj,color,alt_click)
- curLit=loopAdd(curLit,1,0,20)
- changeCoin()
-end
-
-function decLit(obj,color,alt_click)
- curLit=loopAdd(curLit,-1,0,20)
- changeCoin()
-end
-
-function toggleSat(obj,color,alt_click)
- if desat then desat=false else desat=true end
+function changeColor(color)
+ curColor=color
  changeCoin()
 end
 
@@ -806,19 +776,8 @@ function loopAdd(num,amount,min,max)
  return num
 end
 
-function getColor(huemod,satmod,litmod)
- if not ifTint()then return{1,1,1}end
- local sat=0.8
- if desat then sat=0 end
- return HSLtoRGBA(loopAdd(curHue,huemod,1,360),sat+satmod,loopAdd(curLit,litmod,0,20)/20)
-end
-
-function getOtherSat()
- if desat then
-  return getColor(0,0.8,0)
- else
-  return getColor(0,-0.8,0)
- end
+function getColor()
+ if not ifTint()then return{1,1,1}else return curColor end
 end
 
 function ifTint()
@@ -831,18 +790,6 @@ function getMesh()
  return getSteamUrl("1895469594968982672/1E3A4D48F3F98FF6E52D28C58C73054EEBB35527")
 end
 
-function HSLtoRGBA(hue,sat,lit)
- local chroma=(1-math.abs((2*lit)-1))*sat
- hue=hue/60
- local m=lit-chroma/2
- local x=chroma*(1-math.abs(hue%2-1))+m
- local rgba={}
- rgba[3-(math.floor(hue+1)%3)]=x--30=0.5=1.5=1=1=2
- rgba[(math.floor(hue/2)+2)%3+1]=m--30=0.5=0.25=0=2=2=3
- rgba[math.floor((hue+7)/2)%3+1]=chroma+m--30=0.5=7.5
- rgba[4]=1
- return rgba
-end
 
 function updateCoinToText(obj,color,value,selected)
  if not selected and value!=curCoin then
@@ -871,7 +818,7 @@ function changeCoin()
  local coin=self.getData()["ContainedObjects"][1]
  coin.CustomMesh.DiffuseURL=getSteamUrl(diffs[curCoin])
  coin.CustomMesh.NormalURL=getSteamUrl(bumps[curCoin])
- coin.ColorDiffuse=getColor(0,0,0)
+ coin.ColorDiffuse=getColor()
  local rot=self.GetRotation()
  rot[2]=rot[2]+10
  local obj=spawnObjectData({data=coin,position=self.positionToWorld({0,0.05,0}),rotation=rot})
@@ -925,7 +872,7 @@ function onNumberTyped(color,num)
 end
 
 function saveData()
- local save={printFlips=printFlips,flipCleanup=flipCleanup,coins={},curCoin=curCoin,curHue=curHue,desat=desat,curLit=curLit}
+ local save={printFlips=printFlips,flipCleanup=flipCleanup,coins={},curCoin=curCoin,curColor=curColor}
  for i,coin in pairs(coinsActive) do save.coins[i]=coinsActive[i].guid end
  self.script_state=json.serialize(save)
 end
